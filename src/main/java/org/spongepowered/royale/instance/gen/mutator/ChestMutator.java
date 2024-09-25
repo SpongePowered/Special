@@ -24,7 +24,7 @@
  */
 package org.spongepowered.royale.instance.gen.mutator;
 
-import net.kyori.adventure.text.serializer.plain.PlainComponentSerializer;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.spongepowered.api.ResourceKey;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
@@ -62,7 +62,7 @@ public final class ChestMutator extends SignMutator {
         return (world, blockentitySupplier, x, y, z) -> {
             final Sign sign = (Sign) blockentitySupplier.get();
             final Direction facingDirection = sign.get(Keys.DIRECTION).orElse(null);
-            final String lootTableId = PlainComponentSerializer.plain().serialize(sign.lines().get(1));
+            final String lootTableId = PlainTextComponentSerializer.plainText().serialize(sign.lines().get(1));
             final LootTable<ItemArchetype> lootTable = Loots.getTable(lootTableId.toLowerCase());
             final List<ItemArchetype> items = lootTable.get(this.random);
 

@@ -1,37 +1,31 @@
 import org.spongepowered.gradle.plugin.config.PluginLoaders
-import org.spongepowered.plugin.metadata.PluginDependency
+import org.spongepowered.plugin.metadata.model.PluginDependency
 
 plugins {
     `java-library`
-    id("org.spongepowered.gradle.plugin") version "1.1.0"
-    id("org.cadixdev.licenser") version "0.6.0"
-    id("com.github.johnrengelman.shadow") version "7.0.0"
-
+    id("org.spongepowered.gradle.plugin") version "2.2.0"
+    id("org.cadixdev.licenser") version "0.6.1"
 }
 
 group = project.group
 version = "${project.properties["minecraftVersion"]}-r${project.properties["apiVersion"].toString().split("-")[0]}"
 
 repositories {
-    mavenLocal()
     maven("https://repo.spongepowered.org/repository/maven-public/") {
         name = "sponge"
     }
 }
 
-dependencies {
-    implementation("org.spongepowered:spongeapi:8.+")
-    implementation("net.kyori:adventure-text-minimessage:4.1.0-SNAPSHOT") {
-        exclude(group = "net.kyori", module = "adventure-api")
-    }
-}
-
 sponge {
     apiVersion("${project.properties["apiVersion"]}")
+    license("MIT")
+    loader {
+        name(PluginLoaders.JAVA_PLAIN)
+        version("1.0")
+    }
     plugin("royale") {
-        loader(PluginLoaders.JAVA_PLAIN)
         displayName("${project.properties["name"]}")
-        mainClass("org.spongepowered.royale.Royale")
+        entrypoint("org.spongepowered.royale.Royale")
         description("Battle Royale, now on Sponge!")
         links {
             homepage("https://spongepowered.org")
@@ -48,40 +42,25 @@ sponge {
     }
 }
 
-val javaTarget = 8 // Sponge targets a minimum of Java 8
 java {
-    sourceCompatibility = JavaVersion.toVersion(javaTarget)
-    targetCompatibility = JavaVersion.toVersion(javaTarget)
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 tasks.withType(JavaCompile::class).configureEach {
-    options.apply {
-        encoding = "utf-8" // Consistent source file encoding
-        if (JavaVersion.current().isJava10Compatible) {
-            release.set(javaTarget)
-        }
-    }
+    options.encoding = "utf-8"
 }
 
 tasks {
     jar {
         manifest {
-            attributes(mapOf(
-                    "Implementation-Title" to project.name,
-                    "Implementation-Version" to project.version,
-                    "Implementation-Vendor" to project.properties["organization"]
-            )
+            attributes(
+                "Implementation-Title" to project.name,
+                "Implementation-Version" to project.version,
+                "Implementation-Vendor" to project.properties["organization"]
             )
         }
-    }
-    shadowJar {
-        archiveClassifier.set("plugin")
-        dependencies {
-            include(dependency("net.kyori:adventure-text-minimessage"))
-        }
-    }
-    build {
-        dependsOn.add(shadowJar)
     }
 }
 

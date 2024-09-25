@@ -55,6 +55,8 @@ import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.filter.cause.Root;
 import org.spongepowered.api.event.lifecycle.RefreshGameEvent;
 import org.spongepowered.api.event.network.ServerSideConnectionEvent;
+import org.spongepowered.api.util.Ticks;
+import org.spongepowered.api.world.DefaultWorldKeys;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.server.ServerLocation;
 import org.spongepowered.api.world.server.ServerWorld;
@@ -75,7 +77,7 @@ public final class EventHandler {
     public void onJoin(final ServerSideConnectionEvent.Join event, @Getter("player") final ServerPlayer player) {
         final ServerWorld world = player.world();
         final Optional<Instance> instanceOpt = Royale.getInstance().getInstanceManager().getInstance(world.key());
-        if (!instanceOpt.isPresent()) {
+        if (instanceOpt.isEmpty()) {
             return;
         }
 
@@ -85,10 +87,10 @@ public final class EventHandler {
     }
 
     @Listener(order = Order.LAST)
-    public void onDisconnect(final ServerSideConnectionEvent.Disconnect event, @Getter("player") final ServerPlayer player) {
+    public void onLeave(final ServerSideConnectionEvent.Leave event, @Getter("player") final ServerPlayer player) {
         final ServerWorld world = player.world();
         final Optional<Instance> instanceOpt = Royale.getInstance().getInstanceManager().getInstance(world.key());
-        if (!instanceOpt.isPresent()) {
+        if (instanceOpt.isEmpty()) {
             return;
         }
 
@@ -96,7 +98,8 @@ public final class EventHandler {
             instanceOpt.get().removePlayer(player);
         }
 
-        final ServerWorld lobby = Sponge.server().worldManager().world(Constants.Map.Lobby.LOBBY_WORLD_KEY).orElse(Sponge.server().worldManager().defaultWorld());
+        final ServerWorld lobby = Sponge.server().worldManager().world(Constants.Map.Lobby.LOBBY_WORLD_KEY)
+                .or(() -> Sponge.server().worldManager().world(DefaultWorldKeys.DEFAULT)).get();
         Sponge.server().serverScoreboard().ifPresent(player::setScoreboard);
         player.setLocation(ServerLocation.of(lobby, lobby.properties().spawnPosition()));
         player.offer(Keys.GAME_MODE, GameModes.SURVIVAL.get());
@@ -108,7 +111,7 @@ public final class EventHandler {
         final Optional<Instance> instance = Royale.getInstance().getInstanceManager().getInstance(world.key());
 
         // We only care about inner-instance movement
-        if (!instance.isPresent()) {
+        if (instance.isEmpty()) {
             return;
         }
 
@@ -138,7 +141,7 @@ public final class EventHandler {
         final ServerWorld world = player.world();
         final Optional<Instance> instance = Royale.getInstance().getInstanceManager().getInstance(world.key());
 
-        if (!instance.isPresent()) {
+        if (instance.isEmpty()) {
             return;
         }
 
@@ -146,7 +149,7 @@ public final class EventHandler {
             instance.get().removePlayer(player);
             event.setCancelled(true);
             player.transform(Keys.POTION_EFFECTS, list -> {
-                list.add(PotionEffect.of(PotionEffectTypes.NIGHT_VISION, 1, 1000000000));
+                list.add(PotionEffect.of(PotionEffectTypes.NIGHT_VISION, 1, Ticks.of(1000000000)));
                 return list;
             });
         }
@@ -155,13 +158,13 @@ public final class EventHandler {
     @Listener
     public void onDamagePlayer(final DamageEntityEvent event, @First DamageSource source, @Getter("entity") final ServerPlayer player) {
         final ServerWorld world = player.world();
-        if (world.key().equals(Constants.Map.Lobby.LOBBY_WORLD_KEY) && source.type() != DamageTypes.VOID.get()) {
+        if (world.key().equals(Constants.Map.Lobby.LOBBY_WORLD_KEY) && source.type() != DamageTypes.GENERIC_KILL.get()) {
             event.setCancelled(true);
             return;
         }
 
         final Optional<Instance> instance = Royale.getInstance().getInstanceManager().getInstance(world.key());
-        if (!instance.isPresent()) {
+        if (instance.isEmpty()) {
             return;
         }
 

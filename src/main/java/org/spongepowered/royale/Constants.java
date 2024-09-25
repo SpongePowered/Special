@@ -26,6 +26,7 @@ package org.spongepowered.royale;
 
 import org.spongepowered.api.ResourceKey;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.data.Keys;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.ItemStackSnapshot;
@@ -37,16 +38,14 @@ import org.spongepowered.api.world.difficulty.Difficulties;
 import org.spongepowered.api.world.server.WorldTemplate;
 import org.spongepowered.royale.instance.InstanceType;
 import org.spongepowered.royale.instance.gen.InstanceMutator;
+import org.spongepowered.royale.instance.gen.mutator.ChestMutator;
+import org.spongepowered.royale.instance.gen.mutator.PlayerSpawnMutator;
 import org.spongepowered.royale.template.ComponentTemplate;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public final class Constants {
 
@@ -63,9 +62,7 @@ public final class Constants {
 
         public static final Path INSTANCE_TYPES_FOLDER = Royale.getInstance().getConfigFile().resolve("types");
 
-        public static final List<ResourceKey> DEFAULT_MAP_MUTATOR_IDS = new ArrayList<>();
-
-        public static final Set<InstanceMutator> DEFAULT_MAP_MUTATORS = new HashSet<>();
+        public static final HashMap<ResourceKey, InstanceMutator> DEFAULT_MAP_MUTATORS = new HashMap<>();
         public static final ComponentTemplate DEFAULT_TEXT_TEMPLATE_NAME = new ComponentTemplate("<red><pl_sponge:name></red>");
 
         static {
@@ -77,11 +74,8 @@ public final class Constants {
                 }
             }
 
-            DEFAULT_MAP_MUTATOR_IDS.add(ResourceKey.of(Royale.getInstance().getPlugin().metadata().id(), "chest"));
-            DEFAULT_MAP_MUTATOR_IDS.add(ResourceKey.of(Royale.getInstance().getPlugin().metadata().id(), "player_spawn"));
-
-            DEFAULT_MAP_MUTATORS.add(Sponge.server().registry(Plugin.INSTANCE_MUTATOR).findValue(ResourceKey.of(Plugin.ID, "chest")).get());
-            DEFAULT_MAP_MUTATORS.add(Sponge.server().registry(Plugin.INSTANCE_MUTATOR).findValue(ResourceKey.of(Plugin.ID, "player_spawn")).get());
+            DEFAULT_MAP_MUTATORS.put(ResourceKey.of(Plugin.ID, "chest"), new ChestMutator());
+            DEFAULT_MAP_MUTATORS.put(ResourceKey.of(Plugin.ID, "player_spawn"), new PlayerSpawnMutator());
         }
 
         private Map() {
@@ -119,11 +113,11 @@ public final class Constants {
 
             static final WorldTemplate LOBBY_TEMPLATE = WorldTemplate.builder().from(WorldTemplate.overworld())
                     .key(Lobby.LOBBY_WORLD_KEY)
-                    .loadOnStartup(true)
-                    .difficulty(Difficulties.EASY)
-                    .performsSpawnLogic(true)
-                    .pvp(false)
-                    .serializationBehavior(SerializationBehavior.AUTOMATIC_METADATA_ONLY)
+                    .add(Keys.IS_LOAD_ON_STARTUP, true)
+                    .add(Keys.WORLD_DIFFICULTY, Difficulties.EASY.get())
+                    .add(Keys.PERFORM_SPAWN_LOGIC, true)
+                    .add(Keys.PVP, false)
+                    .add(Keys.SERIALIZATION_BEHAVIOR, SerializationBehavior.AUTOMATIC_METADATA_ONLY)
                     .build();
 
             private Lobby() {

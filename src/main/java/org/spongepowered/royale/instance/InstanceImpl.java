@@ -39,6 +39,9 @@ import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.entity.living.player.server.ServerPlayer;
 import org.spongepowered.api.scheduler.ScheduledTask;
 import org.spongepowered.api.scheduler.Task;
+import org.spongepowered.api.util.Ticks;
+import org.spongepowered.api.util.Tuple;
+import org.spongepowered.api.world.DefaultWorldKeys;
 import org.spongepowered.api.world.server.ServerLocation;
 import org.spongepowered.api.world.server.ServerWorld;
 import org.spongepowered.math.vector.Vector2d;
@@ -54,16 +57,18 @@ import org.spongepowered.royale.instance.task.ProgressTask;
 import org.spongepowered.royale.instance.task.StartTask;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -74,13 +79,13 @@ public final class InstanceImpl implements Instance {
     private final Deque<Vector3d> unusedSpawns = new ArrayDeque<>();
     private final Map<UUID, Vector3d> playerSpawns = new HashMap<>();
     private final Set<UUID> playerDeaths = new HashSet<>();
-    private final Set<UUID> tasks = new LinkedHashSet<>();
+    private final List<Tuple<ScheduledTask, InstanceTask>> tasks = new ArrayList<>();
     private final InstanceScoreboard scoreboard;
     private final Set<ServerLocation> signLoc;
     private State state = State.IDLE;
     private UUID winner;
     private boolean unloading;
-    private BossBar bossBar = BossBar.bossBar(Component.text("Royale"), 0.0f, BossBar.Color.GREEN, BossBar.Overlay.PROGRESS);
+    private final BossBar bossBar = BossBar.bossBar(Component.text("Royale"), 0.0f, BossBar.Color.GREEN, BossBar.Overlay.PROGRESS);
 
     public InstanceImpl(final ServerWorld world, final InstanceType instanceType) {
         this.worldKey = world.key();
@@ -179,7 +184,7 @@ public final class InstanceImpl implements Instance {
         player.setLocation(ServerLocation.of(this.worldKey, center.x(), 0, center.y()).asHighestLocation());
         player.offer(Keys.GAME_MODE, GameModes.SPECTATOR.get());
         player.transform(Keys.POTION_EFFECTS, list -> {
-            list.add(PotionEffect.of(PotionEffectTypes.NIGHT_VISION, 1, 1000000));
+            list.add(PotionEffect.of(PotionEffectTypes.NIGHT_VISION, 1, Ticks.of(1000000)));
             return list;
         });
         return true;
@@ -187,7 +192,7 @@ public final class InstanceImpl implements Instance {
 
     @Override
     public boolean removeSpectator(ServerPlayer player) {
-        player.hideBossBar(bossBar);
+        player.hideBossBar(this.bossBar);
         player.offer(Keys.GAME_MODE, GameModes.SURVIVAL.get());
         player.transform(Keys.POTION_EFFECTS, list -> {
             list.removeIf(pe -> pe.type().equals(PotionEffectTypes.NIGHT_VISION.get()));
@@ -233,7 +238,7 @@ public final class InstanceImpl implements Instance {
 
     public void kickAll() {
         final ServerWorld lobby = Sponge.server().worldManager().world(Constants.Map.Lobby.LOBBY_WORLD_KEY)
-                .orElse(Sponge.server().worldManager().defaultWorld());
+                .or(() -> Sponge.server().worldManager().world(DefaultWorldKeys.DEFAULT)).get();
         this.stopTasks();
 
         for (ServerPlayer player : this.world().players()) {
@@ -289,46 +294,32 @@ public final class InstanceImpl implements Instance {
         this.updateSign();
     }
 
+    private void addTask(InstanceTask task) {
+        ScheduledTask scheduledTask = Sponge.server().scheduler().submit(Task.builder()
+                .plugin(Royale.getInstance().getPlugin())
+                .execute(task)
+                .interval(1, TimeUnit.SECONDS)
+                .build()
+        );
+        this.tasks.add(Tuple.of(scheduledTask, task));
+    }
+
     private void onStateAdvance(final State next) {
 
 
         this.stopTasks();
         switch (next) {
             case STARTING:
-                this.tasks.add(Sponge.server().scheduler().submit(Task.builder()
-                        .plugin(Royale.getInstance().getPlugin())
-                        .execute(new StartTask(this))
-                        .interval(1, TimeUnit.SECONDS)
-                        .name(Constants.Plugin.ID + " - Start Countdown - " + this.worldKey)
-                        .build()
-                ).uniqueId());
+                this.addTask(new StartTask(this));
                 break;
             case RUNNING:
-                this.tasks.add(Sponge.server().scheduler().submit(Task.builder()
-                        .plugin(Royale.getInstance().getPlugin())
-                        .execute(new ProgressTask(this, bossBar))
-                        .interval(1, TimeUnit.SECONDS)
-                        .name(Constants.Plugin.ID + " - Progress Countdown - " + this.worldKey)
-                        .build()
-                ).uniqueId());
+                this.addTask(new ProgressTask(this, this.bossBar));
                 break;
             case OVERTIME:
-                this.tasks.add(Sponge.server().scheduler().submit(Task.builder()
-                        .plugin(Royale.getInstance().getPlugin())
-                        .execute(new OvertimeTask(this, bossBar))
-                        .interval(1, TimeUnit.SECONDS)
-                        .name(Constants.Plugin.ID + " - Overtime - " + this.worldKey)
-                        .build()
-                ).uniqueId());
+                this.addTask(new OvertimeTask(this, this.bossBar));
                 break;
             case ENDING:
-                this.tasks.add(Sponge.server().scheduler().submit(Task.builder()
-                        .plugin(Royale.getInstance().getPlugin())
-                        .execute(new EndTask(this))
-                        .interval(1, TimeUnit.SECONDS)
-                        .name(Constants.Plugin.ID + " - End Countdown - " + this.worldKey)
-                        .build()
-                ).uniqueId());
+                this.addTask(new EndTask(this));
                 break;
             case STOPPED:
                 this.unloading = true;
@@ -346,27 +337,20 @@ public final class InstanceImpl implements Instance {
     }
 
     private void stopTasks() {
-        this.tasks.removeIf(uuid -> {
-            final Optional<ScheduledTask> taskOpt = Sponge.server().scheduler().findTask(uuid);
-            if (!taskOpt.isPresent()) {
-                Royale.getInstance().getPlugin().logger().warn("Missing task with UUID {} while in state {}", uuid, this.state);
-                return true;
+        for (var tuple : this.tasks) {
+            ScheduledTask scheduledTask = tuple.first();
+            InstanceTask task = tuple.second();
+
+            if (scheduledTask.isCancelled()) {
+                Royale.getInstance().getPlugin().logger().warn("Cancelled task with UUID {} while in state {}", scheduledTask.uniqueId(), this.state);
+                continue;
             }
 
-            if (taskOpt.get().isCancelled()) {
-                Royale.getInstance().getPlugin().logger().warn("Cancelled task with UUID {} while in state {}", uuid, this.state);
-                return true;
-            }
+            task.cleanup();
+            scheduledTask.cancel();
+        }
 
-            if (!(taskOpt.get().task().consumer() instanceof InstanceTask)) {
-                Royale.getInstance().getPlugin().logger().warn("Malformed task with UUID {} while in state {}", uuid, this.state);
-                return true;
-            }
-
-            ((InstanceTask) taskOpt.get().task().consumer()).cleanup();
-            taskOpt.get().cancel();
-            return true;
-        });
+        this.tasks.clear();
     }
 
     @Override
@@ -388,10 +372,10 @@ public final class InstanceImpl implements Instance {
 
     @Override
     public String toString() {
-        return com.google.common.base.MoreObjects.toStringHelper(this)
-                .add("name", this.worldKey)
-                .add("type", this.instanceType)
-                .add("state", this.state)
+        return new StringJoiner(", ", InstanceImpl.class.getSimpleName() + "[", "]")
+                .add("name=" + this.worldKey)
+                .add("type=" + this.instanceType)
+                .add("state=" + this.state)
                 .toString();
     }
 

@@ -24,7 +24,7 @@
  */
 package org.spongepowered.royale.instance.gen.mutator;
 
-import net.kyori.adventure.text.serializer.plain.PlainComponentSerializer;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.spongepowered.api.ResourceKey;
 import org.spongepowered.api.block.entity.BlockEntity;
 import org.spongepowered.api.block.entity.Sign;
@@ -54,8 +54,8 @@ abstract class SignMutator extends InstanceMutator {
             }
             final Sign sign = (Sign) blockEntity;
 
-            if (!PlainComponentSerializer.plain().serialize(sign.lines().get(0)).equalsIgnoreCase(this.signId)) {
-                if (PlainComponentSerializer.plain().serialize(sign.lines().get(1)).equalsIgnoreCase(this.signId)) {
+            if (!PlainTextComponentSerializer.plainText().serialize(sign.lines().get(0)).equalsIgnoreCase(this.signId)) {
+                if (PlainTextComponentSerializer.plainText().serialize(sign.lines().get(1)).equalsIgnoreCase(this.signId)) {
                     Royale.getInstance().getPlugin().logger().error("Found mismatched sign at {}x {}y {}z!", x, y, z);
                 } else {
                     return false;

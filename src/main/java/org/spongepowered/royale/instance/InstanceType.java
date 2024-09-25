@@ -30,7 +30,6 @@ import org.spongepowered.api.Sponge;
 import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.util.Nameable;
 import org.spongepowered.api.util.ResourceKeyedBuilder;
-import org.spongepowered.math.vector.Vector3i;
 import org.spongepowered.royale.Constants;
 import org.spongepowered.royale.instance.configuration.InstanceTypeConfiguration;
 import org.spongepowered.royale.instance.gen.InstanceMutator;
@@ -143,7 +142,7 @@ public final class InstanceType implements ResourceKeyed, Nameable {
         config.general.name = this.name;
         config.general.nameTemplate = this.nameTemplate;
         config.general.mapMutators.clear();
-        config.general.mapMutators.addAll(this.mutatorPipeline.getMutators().stream().map(InstanceMutator::key).collect(Collectors.toList()));
+        config.general.mapMutators.addAll(this.mutatorPipeline.getMutators().stream().map(InstanceMutator::key).toList());
 
         config.round.defaultItems.clear();
         config.round.defaultItems.addAll(this.defaultItems);
@@ -240,8 +239,8 @@ public final class InstanceType implements ResourceKeyed, Nameable {
         public Builder reset() {
             this.name = null;
             this.nameTemplate = Constants.Map.DEFAULT_TEXT_TEMPLATE_NAME;
-            this.mutators = Constants.Map.DEFAULT_MAP_MUTATORS;
-            this.defaultItems = Constants.Map.Round.DEFAULT_ITEMS;
+            this.mutators = new HashSet<>(Constants.Map.DEFAULT_MAP_MUTATORS.values());
+            this.defaultItems = new LinkedList<>(Constants.Map.Round.DEFAULT_ITEMS);
             this.roundStartTemplate = Constants.Map.Round.DEFAULT_TEXT_TEMPLATE_START;
             this.roundEndTemplate = Constants.Map.Round.DEFAULT_TEXT_TEMPLATE_END;
             this.roundStartLength = Constants.Map.Round.DEFAULT_START_LENGTH;

@@ -46,7 +46,7 @@ import org.spongepowered.api.world.server.WorldManager;
 import org.spongepowered.configurate.ConfigurateException;
 import org.spongepowered.configurate.ConfigurationOptions;
 import org.spongepowered.plugin.PluginContainer;
-import org.spongepowered.plugin.jvm.Plugin;
+import org.spongepowered.plugin.builtin.jvm.Plugin;
 import org.spongepowered.royale.api.InstanceManager;
 import org.spongepowered.royale.api.RoyaleKeys;
 import org.spongepowered.royale.configuration.MappedConfigurationAdapter;
@@ -55,8 +55,6 @@ import org.spongepowered.royale.instance.InstanceManagerImpl;
 import org.spongepowered.royale.instance.InstanceType;
 import org.spongepowered.royale.instance.configuration.InstanceTypeConfiguration;
 import org.spongepowered.royale.instance.gen.InstanceMutator;
-import org.spongepowered.royale.instance.gen.mutator.ChestMutator;
-import org.spongepowered.royale.instance.gen.mutator.PlayerSpawnMutator;
 import org.spongepowered.royale.template.ComponentTemplate;
 import org.spongepowered.royale.template.ComponentTemplateTypeSerializer;
 
@@ -152,18 +150,17 @@ public final class Royale {
     @Listener
     public void onStartingServer(final StartingEngineEvent<Server> event) {
         Sponge.eventManager().registerListeners(this.plugin, new EventHandler());
-        this.taskExecutorService = event.engine().scheduler().createExecutor(this.plugin);
+        this.taskExecutorService = event.engine().scheduler().executor(this.plugin);
     }
 
     @Listener
     public void onServerStarted(final StartedEngineEvent<Server> event) {
         final WorldManager worldManager = Sponge.server().worldManager();
-        worldManager.saveTemplate(Constants.Map.Lobby.LOBBY_TEMPLATE)
-                .thenCompose(result -> {
-                    if (!result) {
-                        throw new RuntimeException("UNABLE TO SAVE LOBBY WORLD TEMPLATE. Shutting down the server.");
+        worldManager.loadWorld(Constants.Map.Lobby.LOBBY_TEMPLATE)
+                .thenAccept(world -> {
+                    if (world == null) {
+                        throw new RuntimeException("UNABLE TO LOAD LOBBY WORLD. Shutting down the server.");
                     }
-                    return worldManager.loadWorld(Constants.Map.Lobby.LOBBY_WORLD_KEY);
                 })
                 .whenCompleteAsync((result, exception) -> {
                     if (exception != null) {
@@ -174,10 +171,7 @@ public final class Royale {
     }
 
     private Map<ResourceKey, InstanceMutator> defaultMutators() {
-        final Map<ResourceKey, InstanceMutator> defaultMutators = new HashMap<>(2);
-        defaultMutators.put(ResourceKey.of(Constants.Plugin.ID, "chest"), new ChestMutator());
-        defaultMutators.put(ResourceKey.of(Constants.Plugin.ID, "player_spawn"), new PlayerSpawnMutator());
-        return defaultMutators;
+        return Constants.Map.DEFAULT_MAP_MUTATORS;
     }
 
     private Map<ResourceKey, InstanceType> defaultInstanceTypes() {

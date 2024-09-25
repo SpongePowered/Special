@@ -27,15 +27,12 @@ package org.spongepowered.royale.instance.task;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.title.Title;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.spongepowered.api.scheduler.ScheduledTask;
 import org.spongepowered.api.world.server.ServerWorld;
 import org.spongepowered.royale.instance.InstanceImpl;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 public final class StartTask extends InstanceTask {
 
@@ -54,7 +51,7 @@ public final class StartTask extends InstanceTask {
             throw new IllegalStateException("Instance should have already started but the start task is still running");
         }
 
-        final Title.Times times = Title.Times.of(Duration.ZERO, Duration.ofMillis(600), Duration.ofMillis(400));
+        final Title.Times times = Title.Times.times(Duration.ZERO, Duration.ofMillis(600), Duration.ofMillis(400));
 
         if (remaining == 0) {
             final Component template = this.instance.getType().getRoundStartTemplate().parse(null, Collections.emptyMap());

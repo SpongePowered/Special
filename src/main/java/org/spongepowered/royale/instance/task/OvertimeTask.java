@@ -43,7 +43,6 @@ import org.spongepowered.api.entity.ai.goal.builtin.LookRandomlyGoal;
 import org.spongepowered.api.entity.ai.goal.builtin.SwimGoal;
 import org.spongepowered.api.entity.ai.goal.builtin.creature.AttackLivingGoal;
 import org.spongepowered.api.entity.ai.goal.builtin.creature.RandomWalkingGoal;
-import org.spongepowered.api.entity.ai.goal.builtin.creature.RangedAttackAgainstAgentGoal;
 import org.spongepowered.api.entity.ai.goal.builtin.creature.target.FindNearestAttackableTargetGoal;
 import org.spongepowered.api.entity.living.Agent;
 import org.spongepowered.api.entity.living.Human;
@@ -53,14 +52,14 @@ import org.spongepowered.api.entity.living.player.server.ServerPlayer;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.scheduler.ScheduledTask;
-import org.spongepowered.api.world.explosion.Explosion;
+import org.spongepowered.api.util.Ticks;
 import org.spongepowered.api.world.server.ServerLocation;
 import org.spongepowered.api.world.server.ServerWorld;
 import org.spongepowered.math.vector.Vector3d;
 import org.spongepowered.royale.instance.InstanceImpl;
 
 import java.time.Duration;
-import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 public final class OvertimeTask extends InstanceTask {
@@ -70,7 +69,7 @@ public final class OvertimeTask extends InstanceTask {
     private final Title title = Title.title(
             Component.text("Survive!", NamedTextColor.RED),
             Component.empty(),
-            Title.Times.of(Duration.ZERO, Duration.ofSeconds(1), Duration.ofSeconds(2)));
+            Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ofSeconds(2)));
 
     private final long roundLengthTotal;
     private long roundLengthRemaining;
@@ -164,7 +163,7 @@ public final class OvertimeTask extends InstanceTask {
 
         if (spawnLocation != null) {
             if (waterSpawn) {
-                guardian.offer(Keys.POTION_EFFECTS, Arrays.asList(PotionEffect.of(PotionEffectTypes.SPEED, 2, 10000)));
+                guardian.offer(Keys.POTION_EFFECTS, List.of(PotionEffect.of(PotionEffectTypes.SPEED, 2, Ticks.of(10000))));
                 world.spawnEntity(guardian);
                 guardian.setLocation(spawnLocation);
             } else {
@@ -175,16 +174,16 @@ public final class OvertimeTask extends InstanceTask {
         // someone tried to be smart
         final Silverfish silverfish = world.createEntity(EntityTypes.SILVERFISH, location);
         silverfish.offer(Keys.HEALTH, 200.0);
-        silverfish.offer(Keys.POTION_EFFECTS, Arrays.asList(PotionEffect.of(PotionEffectTypes.POISON, 1, 100), PotionEffect.of(PotionEffectTypes.STRENGTH, 1, 100)));
+        silverfish.offer(Keys.POTION_EFFECTS, List.of(PotionEffect.of(PotionEffectTypes.POISON, 1, Ticks.of(100)), PotionEffect.of(PotionEffectTypes.STRENGTH, 1, Ticks.of(100))));
         world.spawnEntity(silverfish);
     }
 
     private Human customizeHuman(Random random, Human human) {
-        final GoalExecutor<Agent> targetGoal = human.goal(GoalExecutorTypes.TARGET.get()).orElse(null);
+        final GoalExecutor<Agent> targetGoal = human.goal(GoalExecutorTypes.TARGET.get()).get();
         targetGoal.addGoal(0, FindNearestAttackableTargetGoal.builder().chance(1).target(ServerPlayer.class)
                 .filter(e -> this.instance.isPlayerAlive((ServerPlayer) e)).build(human));
 
-        final GoalExecutor<Agent> normalGoal = human.goal(GoalExecutorTypes.NORMAL.get()).orElse(null);
+        final GoalExecutor<Agent> normalGoal = human.goal(GoalExecutorTypes.NORMAL.get()).get();
         normalGoal.addGoal(0, SwimGoal.builder().swimChance(0.8f).build(human));
 
         final float rangerChance = random.nextFloat();
@@ -192,14 +191,13 @@ public final class OvertimeTask extends InstanceTask {
         boolean ranger = false;
 
         if (rangerChance < 0.3f) {
-            normalGoal.addGoal(1,
-                    RangedAttackAgainstAgentGoal.builder().moveSpeed(7.75).attackRadius(15f).delayBetweenAttacks(65).build(
-                            human));
+            // TODO fix human class hierarchy
+            // normalGoal.addGoal(1, RangedAttackAgainstAgentGoal.builder().moveSpeed(7.75).attackRadius(15f).delayBetweenAttacks(Ticks.of(65)).build(human));
             human.setItemInHand(HandTypes.MAIN_HAND, ItemStack.of(ItemTypes.BOW, 1));
             final ItemStack tipped = ItemStack.of(ItemTypes.TIPPED_ARROW, 1);
-            tipped.offer(Keys.POTION_EFFECTS, Arrays.asList(
-                    PotionEffect.of(PotionEffectTypes.GLOWING.get(), 1, 60),
-                    PotionEffect.of(PotionEffectTypes.SLOWNESS.get(), 1, 60)));
+            tipped.offer(Keys.POTION_EFFECTS, List.of(
+                    PotionEffect.of(PotionEffectTypes.GLOWING.get(), 1, Ticks.of(60)),
+                    PotionEffect.of(PotionEffectTypes.SLOWNESS.get(), 1, Ticks.of(60))));
 
             human.setItemInHand(HandTypes.OFF_HAND, tipped);
             ranger = true;

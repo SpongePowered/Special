@@ -32,7 +32,6 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.spongepowered.api.ResourceKey;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.adventure.SpongeComponents;
-import org.spongepowered.api.block.entity.Sign;
 import org.spongepowered.api.command.Command;
 import org.spongepowered.api.command.CommandCompletion;
 import org.spongepowered.api.command.CommandResult;
@@ -42,7 +41,6 @@ import org.spongepowered.api.command.parameter.ArgumentReader;
 import org.spongepowered.api.command.parameter.CommandContext;
 import org.spongepowered.api.command.parameter.Parameter;
 import org.spongepowered.api.command.parameter.managed.ValueParameter;
-import org.spongepowered.api.command.parameter.managed.ValueParser;
 import org.spongepowered.api.command.parameter.managed.clientcompletion.ClientCompletionType;
 import org.spongepowered.api.command.parameter.managed.clientcompletion.ClientCompletionTypes;
 import org.spongepowered.api.command.parameter.managed.standard.ResourceKeyedValueParameters;
@@ -52,21 +50,18 @@ import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.entity.living.player.server.ServerPlayer;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.ItemStack;
+import org.spongepowered.api.world.DefaultWorldKeys;
 import org.spongepowered.api.world.SerializationBehavior;
 import org.spongepowered.api.world.server.ServerLocation;
 import org.spongepowered.api.world.server.ServerWorld;
 import org.spongepowered.api.world.server.WorldManager;
 import org.spongepowered.api.world.server.storage.ServerWorldProperties;
-import org.spongepowered.configurate.ConfigurateException;
 import org.spongepowered.royale.api.Instance;
-import org.spongepowered.royale.configuration.MappedConfigurationAdapter;
 import org.spongepowered.royale.instance.InstanceType;
 import org.spongepowered.royale.api.RoyaleKeys;
-import org.spongepowered.royale.instance.configuration.InstanceTypeConfiguration;
 import org.spongepowered.royale.instance.exception.UnknownInstanceException;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -131,7 +126,7 @@ final class Commands {
                                 );
                                 for (final ServerPlayer player : Sponge.server().onlinePlayers()) {
                                     if (player.world().key().equals(Constants.Map.Lobby.LOBBY_WORLD_KEY)) {
-                                        player.sendMessage(Identity.nil(), Component.text().clickEvent(SpongeComponents.executeCallback(commandCause -> {
+                                        player.sendMessage(Component.text().clickEvent(SpongeComponents.executeCallback(commandCause -> {
                                             final Optional<Instance> instance = Royale.getInstance().getInstanceManager().getInstance(targetWorldKey);
                                             if (instance.isPresent()) {
                                                 if (instance.get().isFull()) {
@@ -362,7 +357,7 @@ final class Commands {
                     final ResourceKey worldKey = context.requireOne(Commands.INSTANCE_KEY_PARAMETER);
 
                     final Optional<Instance> instance = Royale.getInstance().getInstanceManager().getInstance(worldKey);
-                    if (!instance.isPresent()) {
+                    if (instance.isEmpty()) {
                         throw new CommandException(
                                 Component.text().content("Instance [")
                                     .append(Component.text(worldKey.formatted(), NamedTextColor.GREEN))
@@ -370,11 +365,11 @@ final class Commands {
                                     .build());
                     }
                     if (instance.get().isFull()) {
-                        player.sendMessage(Identity.nil(), Component.text("Instance is full!"));
+                        player.sendMessage(Component.text("Instance is full!"));
                         return CommandResult.success();
                     }
 
-                    player.sendMessage(Identity.nil(), Component.text().content("Joining [")
+                    player.sendMessage(Component.text().content("Joining [")
                             .append(Component.text(worldKey.formatted(), NamedTextColor.GREEN))
                             .append(Component.text("]."))
                             .build());
@@ -406,7 +401,7 @@ final class Commands {
                     final ResourceKey worldKey = context.requireOne(Commands.INSTANCE_KEY_PARAMETER);
 
                     final Optional<Instance> instance = Royale.getInstance().getInstanceManager().getInstance(worldKey);
-                    if (!instance.isPresent()) {
+                    if (instance.isEmpty()) {
                         throw new CommandException(
                                 Component.text().content("Instance [")
                                         .append(Component.text(worldKey.formatted(), NamedTextColor.GREEN))
@@ -438,7 +433,7 @@ final class Commands {
                     final ResourceKey worldKey = player.world().key();
 
                     final Optional<Instance> instance = Royale.getInstance().getInstanceManager().getInstance(worldKey);
-                    if (!instance.isPresent()) {
+                    if (instance.isEmpty()) {
                         throw new CommandException(
                                 Component.text().content("Instance [")
                                         .append(Component.text(worldKey.formatted(), NamedTextColor.GREEN))
@@ -452,7 +447,8 @@ final class Commands {
                         instance.get().removeSpectator(player);
                     }
 
-                    final ServerWorld lobby = Sponge.server().worldManager().world(Constants.Map.Lobby.LOBBY_WORLD_KEY).orElse(Sponge.server().worldManager().defaultWorld());
+                    final ServerWorld lobby = Sponge.server().worldManager().world(Constants.Map.Lobby.LOBBY_WORLD_KEY)
+                            .or(() -> Sponge.server().worldManager().world(DefaultWorldKeys.DEFAULT)).get();
                     Sponge.server().serverScoreboard().ifPresent(player::setScoreboard);
                     player.setLocation(ServerLocation.of(lobby, lobby.properties().spawnPosition()));
                     player.offer(Keys.GAME_MODE, GameModes.SURVIVAL.get());
@@ -509,7 +505,7 @@ final class Commands {
                             case NONE:
                                 properties.setSerializationBehavior(SerializationBehavior.MANUAL);
                                 wm.saveProperties(properties);
-                                if (!worldToEdit.isPresent()) {
+                                if (worldToEdit.isEmpty()) {
                                     wm.loadWorld(targetWorldKey);
                                 }
                                 context.sendMessage(Identity.nil(), Component.text("World can now be modified!"));

@@ -32,6 +32,7 @@ import org.spongepowered.royale.Constants;
 import org.spongepowered.royale.configuration.AbstractConfigurationCategory;
 import org.spongepowered.royale.template.ComponentTemplate;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @ConfigSerializable
@@ -47,5 +48,5 @@ public final class GeneralCategory extends AbstractConfigurationCategory {
 
     @Setting
     @Comment("Map Mutators to apply after the instance is loaded.")
-    public List<ResourceKey> mapMutators = Constants.Map.DEFAULT_MAP_MUTATOR_IDS;
+    public List<ResourceKey> mapMutators = new ArrayList<>(Constants.Map.DEFAULT_MAP_MUTATORS.keySet());
 }

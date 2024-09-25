@@ -24,7 +24,6 @@
  */
 package org.spongepowered.royale.instance.task;
 
-import net.kyori.adventure.identity.Identity;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.LinearComponents;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -70,7 +69,7 @@ public final class EndTask extends InstanceTask {
         }
 
         final Optional<UUID> winnerOpt = this.instance.getWinner();
-        if (!winnerOpt.isPresent()) {
+        if (winnerOpt.isEmpty()) {
             Royale.getInstance().getPlugin().logger().warn("{} ended without a winner", this.instance.getWorldKey().formatted());
             this.instance.advance();
             return;
@@ -91,18 +90,18 @@ public final class EndTask extends InstanceTask {
                             .build(), player.location().position()));
 
             Sponge.server().broadcastAudience()
-                    .sendMessage(Identity.nil(), LinearComponents.linear(NamedTextColor.GREEN, name,
+                    .sendMessage(LinearComponents.linear(NamedTextColor.GREEN, name,
                             NamedTextColor.WHITE, Component.text(" has won the game!")));
 
             final Title title = Title.title(LinearComponents.linear(NamedTextColor.GREEN, name,
                     NamedTextColor.WHITE, Component.text(" is the winner!")), Component.empty(),
-                    Title.Times.of(Duration.ZERO, Duration.ofSeconds(this.endLengthTotal - 2), Duration.ofSeconds(1)));
+                    Title.Times.times(Duration.ZERO, Duration.ofSeconds(this.endLengthTotal - 2), Duration.ofSeconds(1)));
 
-            if (!winner.isPresent()) {
+            if (winner.isEmpty()) {
                 world.showTitle(title);
             } else {
                 final Title winnerTitle = Title.title(Component.text("You are the winner!", NamedTextColor.GREEN), Component.empty(),
-                        Title.Times.of(Duration.ZERO, Duration.ofSeconds(this.endLengthTotal - 2), Duration.ofSeconds(1)));
+                        Title.Times.times(Duration.ZERO, Duration.ofSeconds(this.endLengthTotal - 2), Duration.ofSeconds(1)));
                 for (final ServerPlayer player : world.players()) {
                     if (player.uniqueId().equals(winner.get().uniqueId())) {
                         player.showTitle(winnerTitle);
