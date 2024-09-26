@@ -16,6 +16,10 @@ repositories {
     }
 }
 
+dependencies {
+    spongeRuntime("org.spongepowered:spongevanilla:1.21.1-12.0.0-RC1803:universal")
+}
+
 sponge {
     apiVersion("${project.properties["apiVersion"]}")
     license("MIT")

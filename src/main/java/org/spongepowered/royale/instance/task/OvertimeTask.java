@@ -43,6 +43,7 @@ import org.spongepowered.api.entity.ai.goal.builtin.LookRandomlyGoal;
 import org.spongepowered.api.entity.ai.goal.builtin.SwimGoal;
 import org.spongepowered.api.entity.ai.goal.builtin.creature.AttackLivingGoal;
 import org.spongepowered.api.entity.ai.goal.builtin.creature.RandomWalkingGoal;
+import org.spongepowered.api.entity.ai.goal.builtin.creature.RangedAttackAgainstAgentGoal;
 import org.spongepowered.api.entity.ai.goal.builtin.creature.target.FindNearestAttackableTargetGoal;
 import org.spongepowered.api.entity.living.Agent;
 import org.spongepowered.api.entity.living.Human;
@@ -191,8 +192,7 @@ public final class OvertimeTask extends InstanceTask {
         boolean ranger = false;
 
         if (rangerChance < 0.3f) {
-            // TODO fix human class hierarchy
-            // normalGoal.addGoal(1, RangedAttackAgainstAgentGoal.builder().moveSpeed(7.75).attackRadius(15f).delayBetweenAttacks(Ticks.of(65)).build(human));
+            normalGoal.addGoal(1, RangedAttackAgainstAgentGoal.builder().moveSpeed(7.75).attackRadius(15f).delayBetweenAttacks(Ticks.of(65)).build(human));
             human.setItemInHand(HandTypes.MAIN_HAND, ItemStack.of(ItemTypes.BOW, 1));
             final ItemStack tipped = ItemStack.of(ItemTypes.TIPPED_ARROW, 1);
             tipped.offer(Keys.POTION_EFFECTS, List.of(
