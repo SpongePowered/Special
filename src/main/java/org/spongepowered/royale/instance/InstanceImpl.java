@@ -181,7 +181,7 @@ public final class InstanceImpl implements Instance {
             throw new IllegalArgumentException("Player is still alive!");
         }
         final Vector2d center = this.world().border().center();
-        player.setLocation(ServerLocation.of(this.worldKey, center.x(), 0, center.y()).asHighestLocation());
+        player.setLocation(ServerLocation.of(this.worldKey, center.x(), 100, center.y()));
         player.offer(Keys.GAME_MODE, GameModes.SPECTATOR.get());
         player.transform(Keys.POTION_EFFECTS, list -> {
             list.add(PotionEffect.of(PotionEffectTypes.NIGHT_VISION, 1, Ticks.of(1000000)));
