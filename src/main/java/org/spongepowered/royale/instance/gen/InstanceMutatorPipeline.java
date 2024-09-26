@@ -59,8 +59,8 @@ public final class InstanceMutatorPipeline {
         final double r = world.border().diameter() / 2;
 
         final Vector2i center = world.border().center().toInt();
-        final Vector3i min = new Vector3i(center.x() - r, 0, center.y() - r);
-        final Vector3i max = new Vector3i(center.x() + r, world.maximumHeight(), center.y() + r);
+        final Vector3i min = new Vector3i(center.x() - r, world.min().y(), center.y() - r);
+        final Vector3i max = new Vector3i(center.x() + r, world.max().y(), center.y() + r);
 
         for (final InstanceMutator mutator : this.mutators) {
             Royale.getInstance().getPlugin().logger().info("Mutating instance [{}] with mutator [{}]...", instance.getWorldKey(), mutator.key());
