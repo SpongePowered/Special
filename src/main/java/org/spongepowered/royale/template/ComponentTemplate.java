@@ -25,7 +25,10 @@
 package org.spongepowered.royale.template;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.ComponentLike;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.spongepowered.api.ResourceKey;
 import org.spongepowered.api.Sponge;
@@ -75,17 +78,11 @@ public final class ComponentTemplate {
         return map;
     }
 
-    public Component parse(@Nullable final Object associatedObject, final Map<String, Component> arbitraryTokens) {
-        /*final List<Template> templateList = new ArrayList<>();
-        System.out.println("Sending " + this.templatedString + " to MiniMessage");
-        // TODO: If/when MiniMessage works with components again, remove the plain serializer call.
-        this.detectedPlaceholders.forEach((key, component) -> templateList.add(
-                Template.of(key, PlainComponentSerializer.plain().serialize(component.createComponent(associatedObject)))));
-        arbitraryTokens.forEach((key, component) -> templateList.add(Template.of(key, component)));
-        return MiniMessage.get().parse(this.templatedString, templateList);*/
-
-        // TODO resolve template
-        return MiniMessage.miniMessage().deserialize(this.templatedString);
+    public Component parse(@Nullable final Object associatedObject, final Map<String, ComponentLike> arbitraryTokens) {
+        final TagResolver.Builder builder = TagResolver.builder();
+        this.detectedPlaceholders.forEach((key, component) -> builder.resolver(Placeholder.component(key, component.createComponent(associatedObject))));
+        arbitraryTokens.forEach((key, component) -> builder.resolver(Placeholder.component(key, component)));
+        return MiniMessage.miniMessage().deserialize(this.templatedString, builder.build());
     }
 
     public String getTemplatedString() {
