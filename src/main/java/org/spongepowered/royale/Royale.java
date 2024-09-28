@@ -53,6 +53,7 @@ import org.spongepowered.royale.configuration.MappedConfigurationAdapter;
 import org.spongepowered.royale.instance.EventHandler;
 import org.spongepowered.royale.instance.InstanceManagerImpl;
 import org.spongepowered.royale.instance.InstanceType;
+import org.spongepowered.royale.instance.configuration.GlobalConfiguration;
 import org.spongepowered.royale.instance.configuration.InstanceTypeConfiguration;
 import org.spongepowered.royale.instance.gen.InstanceMutator;
 import org.spongepowered.royale.template.ComponentTemplate;
@@ -72,22 +73,21 @@ public final class Royale {
     private static Royale INSTANCE;
 
     private final PluginContainer plugin;
-    private final Path configFile;
+    private final Path configDirectory;
     private final ConfigurationOptions options;
+    private final MappedConfigurationAdapter<GlobalConfiguration> globalConfigurationAdapter;
     private final InstanceManager instanceManager;
     private TaskExecutorService taskExecutorService;
 
     @Inject
-    public Royale(final PluginContainer plugin, @ConfigDir(sharedRoot = false) final Path configFile) {
+    public Royale(final PluginContainer plugin, @ConfigDir(sharedRoot = false) final Path configDirectory) {
         Royale.INSTANCE = this;
 
         this.instanceManager = new InstanceManagerImpl();
         this.plugin = plugin;
-        this.configFile = configFile;
-        this.options = ConfigurationOptions.defaults()
-                .serializers(Sponge.configManager().serializers().childBuilder()
-                            .register(ComponentTemplate.class, new ComponentTemplateTypeSerializer())
-                                     .build());
+        this.configDirectory = configDirectory;
+        this.options = ConfigurationOptions.defaults().serializers(Sponge.configManager().serializers().childBuilder().register(ComponentTemplate.class, new ComponentTemplateTypeSerializer()).build());
+        this.globalConfigurationAdapter = new MappedConfigurationAdapter<>(GlobalConfiguration.class, this.options, configDirectory.resolve("global.conf"));
     }
 
     public static Royale getInstance() {
@@ -98,12 +98,24 @@ public final class Royale {
         return this.plugin;
     }
 
-    public Path getConfigFile() {
-        return this.configFile;
+    public Path getConfigDirectory() {
+        return this.configDirectory;
     }
 
     public ConfigurationOptions getConfigurationOptions() {
         return this.options;
+    }
+
+    public GlobalConfiguration getGlobalConfiguration() {
+        return this.globalConfigurationAdapter.getConfig();
+    }
+
+    public void loadGlobalConfiguration() {
+        try {
+            this.globalConfigurationAdapter.loadOrCreate();
+        } catch (ConfigurateException e) {
+            this.plugin.logger().error("Failed to load global configuration!", e);
+        }
     }
 
     public InstanceManager getInstanceManager() {
@@ -149,6 +161,7 @@ public final class Royale {
 
     @Listener
     public void onStartingServer(final StartingEngineEvent<Server> event) {
+        this.loadGlobalConfiguration();
         Sponge.eventManager().registerListeners(this.plugin, new EventHandler());
         this.taskExecutorService = event.engine().scheduler().executor(this.plugin);
     }

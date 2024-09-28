@@ -60,7 +60,7 @@ public final class Constants {
 
     public static final class Map {
 
-        public static final Path INSTANCE_TYPES_FOLDER = Royale.getInstance().getConfigFile().resolve("types");
+        public static final Path INSTANCE_TYPES_FOLDER = Royale.getInstance().getConfigDirectory().resolve("types");
 
         public static final HashMap<ResourceKey, InstanceMutator> DEFAULT_MAP_MUTATORS = new HashMap<>();
         public static final ComponentTemplate DEFAULT_TEXT_TEMPLATE_NAME = new ComponentTemplate("<red><pl_sponge:name></red>");

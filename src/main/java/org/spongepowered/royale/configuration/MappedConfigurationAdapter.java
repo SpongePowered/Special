@@ -31,6 +31,7 @@ import org.spongepowered.configurate.hocon.HoconConfigurationLoader;
 import org.spongepowered.configurate.objectmapping.ObjectMapper;
 import org.spongepowered.configurate.serialize.SerializationException;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 public final class MappedConfigurationAdapter<T extends AbstractConfiguration> {
@@ -83,5 +84,13 @@ public final class MappedConfigurationAdapter<T extends AbstractConfiguration> {
     public void save() throws ConfigurateException {
         this.mapper.save(this.config, this.root);
         this.loader.save(this.root);
+    }
+
+    public void loadOrCreate() throws ConfigurateException {
+        if (Files.exists(this.configFile)) {
+            this.load();
+        } else {
+            this.save();
+        }
     }
 }

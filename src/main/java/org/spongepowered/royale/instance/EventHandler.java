@@ -74,6 +74,14 @@ import java.util.Optional;
 public final class EventHandler {
 
     @Listener(order = Order.LAST)
+    public void onLogin(final ServerSideConnectionEvent.Login event) {
+        if (Royale.getInstance().getGlobalConfiguration().joinOnLobby) {
+            final Optional<ServerWorld> lobby = Sponge.server().worldManager().world(Constants.Map.Lobby.LOBBY_WORLD_KEY);
+            lobby.ifPresent(serverWorld -> event.setToLocation(ServerLocation.of(serverWorld, serverWorld.properties().spawnPosition())));
+        }
+    }
+
+    @Listener(order = Order.LAST)
     public void onJoin(final ServerSideConnectionEvent.Join event, @Getter("player") final ServerPlayer player) {
         final ServerWorld world = player.world();
         final Optional<Instance> instanceOpt = Royale.getInstance().getInstanceManager().getInstance(world.key());
@@ -279,6 +287,8 @@ public final class EventHandler {
 
     @Listener
     public void onRefresh(final RefreshGameEvent event) {
+        Royale.getInstance().loadGlobalConfiguration();
+
         Constants.Plugin.INSTANCE_TYPE.get().stream().forEach(instanceType -> {
             final Path configPath = Constants.Map.INSTANCE_TYPES_FOLDER.resolve(instanceType.key().value() + ".conf");
             final MappedConfigurationAdapter<InstanceTypeConfiguration> adapter = new MappedConfigurationAdapter<>(
