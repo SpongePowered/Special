@@ -33,16 +33,15 @@ import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.util.Ticks;
 import org.spongepowered.api.util.weighted.VariableAmount;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 
 class PotionItemArchetype extends BasicItemArchetype {
 
+    private final PotionEffectType effect;
     private final VariableAmount power;
     private final VariableAmount duration;
-    private final PotionEffectType effect;
 
     PotionItemArchetype(final Type type, final VariableAmount quantity, final PotionEffectType effect, final VariableAmount power,
             final VariableAmount duration) {
@@ -55,12 +54,11 @@ class PotionItemArchetype extends BasicItemArchetype {
     @Override
     public ItemStack create(final Random rand) {
         final int amount = this.getQuantity().flooredAmount(rand);
-        final List<PotionEffect> itemEffects = new ArrayList<>();
-        itemEffects.add(PotionEffect.of(this.effect, this.power.flooredAmount(rand), Ticks.of(this.duration.flooredAmount(rand))));
+        final List<PotionEffect> itemEffects = List.of(PotionEffect.of(this.effect, this.power.flooredAmount(rand), Ticks.of(this.duration.flooredAmount(rand))));
         return ItemStack.builder()
                 .itemType(this.getType())
                 .quantity(amount)
-                .add(Keys.POTION_EFFECTS, itemEffects)
+                .add(Keys.CUSTOM_POTION_EFFECTS, itemEffects)
                 .build();
     }
 
