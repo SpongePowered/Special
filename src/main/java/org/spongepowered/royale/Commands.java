@@ -124,30 +124,47 @@ final class Commands {
                                                 .append(Component.text("]"))
                                                 .build()
                                 );
-                                for (final ServerPlayer player : Sponge.server().onlinePlayers()) {
-                                    if (player.world().key().equals(Constants.Map.Lobby.LOBBY_WORLD_KEY)) {
-                                        player.sendMessage(Component.text().clickEvent(SpongeComponents.executeCallback(commandCause -> {
-                                            final Optional<Instance> instance = Royale.getInstance().getInstanceManager().getInstance(targetWorldKey);
-                                            if (instance.isPresent()) {
-                                                if (instance.get().isFull()) {
-                                                    player.sendMessage(Component.text("Instance is full!"));
-                                                    return;
-                                                }
-                                                final ServerPlayer serverPlayer = (ServerPlayer) commandCause.root();
-                                                if (instance.get().addPlayer(serverPlayer)) {
-                                                    player.sendMessage(Component.text("Welcome to the game. Please stand by while others join. You will not be able to move until the game "
-                                                            + "starts."));
-                                                }
-                                            }
-                                        })).append(LinearComponents
-                                                .linear(Component.text("["), Component.text(targetWorldKey.formatted(), NamedTextColor.RED),
-                                                        Component.text("] is ready! Click this message or right-click a teleportation sign to join!"))).build());
-                                    }
-                                }
+                                Commands.broadcastJoinMessage(targetWorldKey);
                             }, Royale.getInstance().getTaskExecutorService());
                     return CommandResult.success();
                 })
                 .build();
+    }
+
+    private static Command.Parameterized broadcastCommand() {
+        return Command.builder()
+                .permission(Constants.Plugin.ID + ".command.broadcast")
+                .shortDescription(Component.text("Broadcasts message to join an instance."))
+                .extendedDescription(Component.text("Broadcasts message to join an instance in a ")
+                        .append(Component.text("world", NamedTextColor.GREEN))
+                        .append(Component.text(".")))
+                .addParameter(Commands.INSTANCE_KEY_PARAMETER)
+                .executor(context -> {
+                    final ResourceKey worldKey = context.requireOne(Commands.INSTANCE_KEY_PARAMETER);
+                    Commands.broadcastJoinMessage(worldKey);
+                    return CommandResult.success();
+                })
+                .build();
+    }
+
+    private static void broadcastJoinMessage(final ResourceKey worldKey) {
+        for (final ServerPlayer player : Sponge.server().onlinePlayers()) {
+            if (player.world().key().equals(Constants.Map.Lobby.LOBBY_WORLD_KEY)) {
+                player.sendMessage(Component.text().clickEvent(SpongeComponents.executeCallback(commandCause -> {
+                    final Optional<Instance> instance = Royale.getInstance().getInstanceManager().getInstance(worldKey);
+                    if (instance.isPresent()) {
+                        final ServerPlayer serverPlayer = (ServerPlayer) commandCause.root();
+                        if (instance.get().isFull()) {
+                            serverPlayer.sendMessage(Component.text("Instance is full!"));
+                        } else {
+                            instance.get().addPlayer(serverPlayer);
+                        }
+                    }
+                })).append(LinearComponents
+                        .linear(Component.text("["), Component.text(worldKey.formatted(), NamedTextColor.RED),
+                                Component.text("] is ready! Click this message or right-click a teleportation sign to join!"))).build());
+            }
+        }
     }
 
     private static Command.Parameterized statusCommand() {
@@ -373,10 +390,7 @@ final class Commands {
                             .append(Component.text(worldKey.formatted(), NamedTextColor.GREEN))
                             .append(Component.text("]."))
                             .build());
-                    if (instance.get().addPlayer(player)) {
-                        player.sendMessage(Component.text("Welcome to the game. Please stand by while others join. You will not be able to move until the game "
-                                + "starts."));
-                    }
+                    instance.get().addPlayer(player);
 
                     return CommandResult.success();
                 })
@@ -530,6 +544,7 @@ final class Commands {
                     return CommandResult.success();
                 })
                 .addChild(Commands.createCommand(), "create")
+                .addChild(Commands.broadcastCommand(), "broadcast")
                 .addChild(Commands.statusCommand(), "status")
                 .addChild(Commands.linkCommand(), "link")
                 .addChild(Commands.copyCommand(), "copy")

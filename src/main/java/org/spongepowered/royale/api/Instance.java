@@ -39,9 +39,9 @@ public interface Instance {
 
     boolean addSpawnpoint(Vector3d vector3d);
 
-    boolean addPlayer(ServerPlayer player);
+    void addPlayer(ServerPlayer player);
 
-    boolean removePlayer(ServerPlayer player);
+    void removePlayer(ServerPlayer player);
 
     boolean addSpectator(ServerPlayer player);
 

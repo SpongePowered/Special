@@ -111,7 +111,7 @@ public final class InstanceImpl implements Instance {
     }
 
     @Override
-    public boolean addPlayer(ServerPlayer player) {
+    public void addPlayer(ServerPlayer player) {
         if (this.isFull()) {
             throw new RuntimeException("Instance is full (" + this.unusedSpawns.size() + "/" + this.playerSpawns.size() + ")");
         }
@@ -139,11 +139,12 @@ public final class InstanceImpl implements Instance {
         this.resetPlayer(player);
         player.offer(Keys.GAME_MODE, GameModes.SURVIVAL.get());
         this.updateSign();
-        return true;
+
+        player.sendMessage(Component.text("Welcome to the game. Please stand by while others join. You will not be able to move until the game starts."));
     }
 
     @Override
-    public boolean removePlayer(final ServerPlayer player) {
+    public void removePlayer(final ServerPlayer player) {
         if (!this.isPlayerRegistered(player)) {
             throw new IllegalArgumentException("Player is not registered");
         }
@@ -172,7 +173,6 @@ public final class InstanceImpl implements Instance {
             }
         }
         this.updateSign();
-        return true;
     }
 
     @Override

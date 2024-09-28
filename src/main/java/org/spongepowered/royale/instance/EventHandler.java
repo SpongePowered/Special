@@ -262,10 +262,7 @@ public final class EventHandler {
                     } else {
                         player.sendActionBar(Component.text(String.format("Joining world '%s'", worldKey.get()), NamedTextColor.GREEN));
                         if (instance.getState().canPlayersJoin()) {
-                            if (instance.addPlayer(player)) {
-                                player.sendMessage(Component.text("Welcome to the game. Please stand by while others join. You will not be able to move until the game "
-                                        + "starts."));
-                            }
+                            instance.addPlayer(player);
                         } else {
                             instance.addSpectator(player);
                         }
